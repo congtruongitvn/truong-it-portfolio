@@ -286,17 +286,19 @@ body {
 .image-wrapper img {
     width: 100%; height: 100%;
     object-fit: cover;
+    object-position: center 15%;
 }
 
 .experience-badge {
     position: absolute;
-    bottom: 30px; left: -30px;
+    bottom: 20px; left: 20px;
     background: var(--zalo-blue);
     color: var(--white);
     padding: 1.2rem 1.5rem;
     border-radius: 18px;
     text-align: center;
     box-shadow: var(--shadow-blue);
+    z-index: 2;
 }
 .experience-badge span {
     font-size: 2rem; font-weight: 700;
