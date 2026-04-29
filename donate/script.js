@@ -5,8 +5,8 @@ const SEPAY_CONFIG = {
     env: 'production',
     merchant_id: 'SP-LIVE-NC3A9466',
     checkout_url: {
-        sandbox: 'https://sandbox.pay.sepay.vn/v1/init',
-        production: 'https://pay.sepay.vn/v1/init'
+        sandbox: 'https://sandbox.pay.sepay.vn/v1/checkout/init',
+        production: 'https://pay.sepay.vn/v1/checkout/init'
     },
     success_url: 'https://nct88.github.io/portfolio/donate/?status=success',
     error_url: 'https://nct88.github.io/portfolio/donate/?status=error',
