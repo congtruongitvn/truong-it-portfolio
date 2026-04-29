@@ -8,9 +8,9 @@ const SEPAY_CONFIG = {
         sandbox: 'https://sandbox.pay.sepay.vn/v1/init',
         production: 'https://pay.sepay.vn/v1/init'
     },
-    success_url: 'https://congtruongitvn.github.io/portfolio/donate/?status=success',
-    error_url: 'https://congtruongitvn.github.io/portfolio/donate/?status=error',
-    cancel_url: 'https://congtruongitvn.github.io/portfolio/donate/?status=cancel'
+    success_url: 'https://nct88.github.io/portfolio/donate/?status=success',
+    error_url: 'https://nct88.github.io/portfolio/donate/?status=error',
+    cancel_url: 'https://nct88.github.io/portfolio/donate/?status=cancel'
 };
 
 // ============================================================
