@@ -2,12 +2,12 @@
 // SePay Custom Checkout — Configuration
 // ============================================================
 const BANK_CONFIG = {
-    bank: 'KienLongBank',
-    account: '101499100004603694',
+    bank: 'Sacombank',
+    account: '071283663333',
     name: 'NGUYEN CONG TRUONG',
-    display_name: 'KienLongBank',
-    bank_code: 'klb',
-    bank_bin: '970452'
+    display_name: 'Sacombank',
+    bank_code: 'stb',
+    bank_bin: '970403'
 };
 
 // ============================================================
@@ -71,7 +71,8 @@ const TRANSLATIONS = {
         qr_downloaded: 'Đã tải mã QR!',
         bank_not_found: 'Không tìm thấy ngân hàng',
         bank_app_opened: 'Đã mở app ngân hàng',
-        bank_app_scan_hint: 'Đang mở app. Nếu không tự điền, hãy quét mã QR trên màn hình để chuyển khoản',
+        bank_app_scan_hint: 'Đã sao chép thông tin CK. Mở app và dán hoặc quét mã QR trên màn hình',
+        bank_copy_info: 'Đã sao chép STK. Mở app \u2192 Chuyển khoản \u2192 Dán số TK',
         autofill_yes: 'Tự điền',
         autofill_no: 'Thử mở'
     },
@@ -127,7 +128,8 @@ const TRANSLATIONS = {
         qr_downloaded: 'QR code downloaded!',
         bank_not_found: 'No bank found',
         bank_app_opened: 'Bank app opened',
-        bank_app_scan_hint: 'Opening app. If not auto-filled, scan the QR code on screen to transfer',
+        bank_app_scan_hint: 'Transfer info copied. Open app and paste or scan QR on screen',
+        bank_copy_info: 'Account copied. Open app \u2192 Transfer \u2192 Paste account',
         autofill_yes: 'Autofill',
         autofill_no: 'Try open'
     }
@@ -952,14 +954,17 @@ function openBankApp(bank) {
     const t = TRANSLATIONS[currentLang];
     const amount = parseInt(selectedAmount);
     const content = currentOrderCode || '';
+    const formattedAmount = amount.toLocaleString('vi-VN');
 
-    // Build VietQR deep link URL — full params to open transfer screen
-    // ba format: account@bank_code (e.g. 101499100004603694@KLB)
-    const deepLinkUrl = `https://dl.vietqr.io/pay?app=${encodeURIComponent(bank.appId)}&ba=${BANK_CONFIG.account}@${BANK_CONFIG.bank_code}&am=${amount}&tn=${encodeURIComponent(content)}&bn=${encodeURIComponent(BANK_CONFIG.name)}`;
+    // Step 1: Copy account number to clipboard for easy paste
+    navigator.clipboard.writeText(BANK_CONFIG.account).catch(() => {});
+
+    // Step 2: Build VietQR deep link
+    const deepLinkUrl = `https://dl.vietqr.io/pay?app=${encodeURIComponent(bank.appId)}&ba=${BANK_CONFIG.account}&am=${amount}&tn=${encodeURIComponent(content)}&bn=${encodeURIComponent(BANK_CONFIG.name)}`;
 
     closeBankSelector();
 
-    // Use location.href on mobile for better deep link handling
+    // Step 3: Open deep link
     const platform = detectPlatform();
     if (platform === 'desktop') {
         window.open(deepLinkUrl, '_blank');
@@ -967,11 +972,11 @@ function openBankApp(bank) {
         window.location.href = deepLinkUrl;
     }
 
-    // Show contextual guidance based on autofill support
+    // Step 4: Show guidance toast
     if (bank.autofill) {
         showToast(t.bank_app_opened, 'success');
     } else {
-        showToast(t.bank_app_scan_hint, 'info');
+        showToast(t.bank_copy_info, 'info');
     }
 }
 
