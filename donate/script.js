@@ -69,8 +69,9 @@ const TRANSLATIONS = {
         qr_downloaded: 'Đã tải mã QR!',
         bank_not_found: 'Không tìm thấy ngân hàng',
         bank_app_opened: 'Đã mở app ngân hàng',
+        bank_app_scan_hint: 'Đang mở app. Nếu không tự điền, hãy quét mã QR trên màn hình để chuyển khoản',
         autofill_yes: 'Tự điền',
-        autofill_no: 'Quét QR'
+        autofill_no: 'Thử mở'
     },
     en: {
         page_title: 'Support truong.it',
@@ -124,8 +125,9 @@ const TRANSLATIONS = {
         qr_downloaded: 'QR code downloaded!',
         bank_not_found: 'No bank found',
         bank_app_opened: 'Bank app opened',
+        bank_app_scan_hint: 'Opening app. If not auto-filled, scan the QR code on screen to transfer',
         autofill_yes: 'Autofill',
-        autofill_no: 'Scan QR'
+        autofill_no: 'Try open'
     }
 };
 
@@ -946,11 +948,10 @@ function closeBankSelector() {
 
 function openBankApp(bank) {
     const t = TRANSLATIONS[currentLang];
-    const preset = CURRENCY_PRESETS[currentCurrency];
     const amount = parseInt(selectedAmount);
     const content = currentOrderCode || '';
 
-    // Build VietQR deep link URL
+    // Build VietQR deep link URL — always pass transfer info
     const params = new URLSearchParams({
         app: bank.appId,
         ba: BANK_CONFIG.account,
@@ -960,11 +961,22 @@ function openBankApp(bank) {
 
     const deepLinkUrl = `https://dl.vietqr.io/pay?${params.toString()}`;
 
-    // Open deep link
-    window.open(deepLinkUrl, '_blank');
     closeBankSelector();
 
-    showToast(t.bank_app_opened, 'success');
+    // Use location.href on mobile for better deep link handling
+    const platform = detectPlatform();
+    if (platform === 'desktop') {
+        window.open(deepLinkUrl, '_blank');
+    } else {
+        window.location.href = deepLinkUrl;
+    }
+
+    // Show contextual guidance based on autofill support
+    if (bank.autofill) {
+        showToast(t.bank_app_opened, 'success');
+    } else {
+        showToast(t.bank_app_scan_hint, 'info');
+    }
 }
 
 // Close bank selector on overlay click or Escape
