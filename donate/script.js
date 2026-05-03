@@ -960,7 +960,7 @@ function openBankApp(bank) {
     navigator.clipboard.writeText(BANK_CONFIG.account).catch(() => {});
 
     // Step 2: Build VietQR deep link
-    const deepLinkUrl = `https://dl.vietqr.io/pay?app=${encodeURIComponent(bank.appId)}&ba=${BANK_CONFIG.account}&am=${amount}&tn=${encodeURIComponent(content)}&bn=${encodeURIComponent(BANK_CONFIG.name)}`;
+    const deepLinkUrl = `https://dl.vietqr.io/pay?app=${encodeURIComponent(bank.appId)}&ba=${BANK_CONFIG.account}@${BANK_CONFIG.bank_code}&am=${amount}&tn=${encodeURIComponent(content)}&bn=${encodeURIComponent(BANK_CONFIG.name)}`;
 
     closeBankSelector();
 
