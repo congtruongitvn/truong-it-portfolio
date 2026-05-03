@@ -954,7 +954,6 @@ function openBankApp(bank) {
     const t = TRANSLATIONS[currentLang];
     const amount = parseInt(selectedAmount);
     const content = currentOrderCode || '';
-    const formattedAmount = amount.toLocaleString('vi-VN');
 
     // Step 1: Copy account number to clipboard for easy paste
     navigator.clipboard.writeText(BANK_CONFIG.account).catch(() => {});
@@ -972,12 +971,8 @@ function openBankApp(bank) {
         window.location.href = deepLinkUrl;
     }
 
-    // Step 4: Show guidance toast
-    if (bank.autofill) {
-        showToast(t.bank_app_opened, 'success');
-    } else {
-        showToast(t.bank_copy_info, 'info');
-    }
+    // Step 4: Always notify user that account number was copied
+    showToast(t.stk_copied, 'success');
 }
 
 // Close bank selector on overlay click or Escape
