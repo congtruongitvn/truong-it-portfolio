@@ -68,7 +68,9 @@ const TRANSLATIONS = {
         stk_copied: 'Đã chép số tài khoản!',
         qr_downloaded: 'Đã tải mã QR!',
         bank_not_found: 'Không tìm thấy ngân hàng',
-        bank_app_opened: 'Đã mở app ngân hàng'
+        bank_app_opened: 'Đã mở app ngân hàng',
+        autofill_yes: 'Tự điền',
+        autofill_no: 'Quét QR'
     },
     en: {
         page_title: 'Support truong.it',
@@ -121,7 +123,9 @@ const TRANSLATIONS = {
         stk_copied: 'Account number copied!',
         qr_downloaded: 'QR code downloaded!',
         bank_not_found: 'No bank found',
-        bank_app_opened: 'Bank app opened'
+        bank_app_opened: 'Bank app opened',
+        autofill_yes: 'Autofill',
+        autofill_no: 'Scan QR'
     }
 };
 
@@ -893,12 +897,16 @@ function renderBankList(banks) {
     banks.forEach(bank => {
         const item = document.createElement('div');
         item.className = 'bank-item';
+        const badgeClass = bank.autofill ? 'autofill' : 'no-autofill';
+        const badgeIcon = bank.autofill ? '<i class="fas fa-check"></i>' : '';
+        const badgeText = bank.autofill ? t.autofill_yes : t.autofill_no;
         item.innerHTML = `
             <img class="bank-item-logo" src="${bank.appLogo}" alt="${bank.appName}" loading="lazy" onerror="this.style.display='none'">
             <div class="bank-item-info">
                 <div class="bank-item-name">${escapeHtml(bank.appName.replace(/^\u200e/, ''))}</div>
                 <div class="bank-item-full">${escapeHtml(bank.bankName)}</div>
             </div>
+            <span class="bank-item-badge ${badgeClass}">${badgeIcon} ${badgeText}</span>
             <i class="fas fa-chevron-right bank-item-arrow"></i>
         `;
         item.addEventListener('click', () => openBankApp(bank));

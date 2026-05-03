@@ -156,6 +156,23 @@ body {
 }
 .icon-toggle:hover { border-color: var(--blue); color: var(--blue); }
 
+/* ===== Nav Icon Link (GitHub) ===== */
+.nav-icon-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--border);
+    background: var(--bg-input);
+    color: var(--text-secondary);
+    border-radius: 50%;
+    text-decoration: none;
+    font-size: 0.95rem;
+    transition: all var(--transition);
+}
+.nav-icon-link:hover { border-color: var(--blue); color: var(--blue); }
+
 /* ===== Back Link ===== */
 .back-link {
     display: flex;
@@ -1168,4 +1185,29 @@ footer a:hover { text-decoration: underline; }
 @media (max-width: 600px) {
     .checkout-action-btn { padding: 0.5rem 0.25rem; font-size: 0.65rem; }
     .checkout-action-btn i { font-size: 0.9rem; }
+    .nav-icon-link { width: 28px; height: 28px; font-size: 0.85rem; }
+}
+
+/* ===== Autofill Badge ===== */
+.bank-item-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 0.58rem;
+    font-weight: 600;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.bank-item-badge.autofill {
+    background: rgba(67, 160, 71, 0.12);
+    color: #43a047;
+    border: 1px solid rgba(67, 160, 71, 0.25);
+}
+.bank-item-badge.autofill i { font-size: 0.5rem; }
+.bank-item-badge.no-autofill {
+    background: var(--bg-input);
+    color: var(--text-muted);
+    border: 1px solid var(--border);
 }
