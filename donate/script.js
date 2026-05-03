@@ -6,7 +6,7 @@ const BANK_CONFIG = {
     account: '101499100004603694',
     name: 'NGUYEN CONG TRUONG',
     display_name: 'KienLongBank',
-    bank_code: 'KLB',
+    bank_code: 'klb',
     bank_bin: '970452'
 };
 
