@@ -1,5 +1,5 @@
 /**
- * Cloudflare Worker — SePay Custom Checkout (Không cần KV)
+ * Cloudflare Worker — SePay Custom Checkout + HWID Tracking
  * 
  * === HƯỚNG DẪN DEPLOY ===
  * 1. Truy cập https://dash.cloudflare.com → Workers & Pages → Create
@@ -7,16 +7,17 @@
  * 3. Paste toàn bộ code này vào và Deploy
  * 4. Vào Settings → Variables and Secrets → Add:
  *    - SEPAY_API_TOKEN: (API token từ my.sepay.vn) → Encrypt
- * 5. Worker URL: https://donate-api.<subdomain>.workers.dev
- * 
- * KHÔNG cần KV Namespace. Worker dùng SePay API để kiểm tra giao dịch.
+ * 5. Vào Settings → KV Namespace Bindings → Add:
+ *    - Variable name: DONATE_HWIDS
+ *    - Tạo mới KV Namespace "donate-hwids" rồi chọn bind
+ * 6. Worker URL: https://donate-api.<subdomain>.workers.dev
  */
 
 export default {
     async fetch(request, env, ctx) {
         const corsHeaders = {
             'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'GET, OPTIONS',
+            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
             'Access-Control-Allow-Headers': 'Content-Type',
         };
 
@@ -24,12 +25,17 @@ export default {
             return new Response(null, { headers: corsHeaders });
         }
 
+        const url = new URL(request.url);
+        const path = url.pathname;
+
+        // POST /hwid/register — Đăng ký HWID đã donate
+        if (request.method === 'POST' && path === '/hwid/register') {
+            return await handleHwidRegister(request, env, corsHeaders);
+        }
+
         if (request.method !== 'GET') {
             return respond({ error: 'Method not allowed' }, 405, corsHeaders);
         }
-
-        const url = new URL(request.url);
-        const path = url.pathname;
 
         try {
             if (!env.SEPAY_API_TOKEN) {
@@ -41,6 +47,13 @@ export default {
             // ============================================================
             if (path === '/check') {
                 return await handleCheckPayment(url, env, corsHeaders);
+            }
+
+            // ============================================================
+            // GET /hwid/check?id=XXX — Kiểm tra HWID đã donate chưa
+            // ============================================================
+            if (path === '/hwid/check') {
+                return await handleHwidCheck(url, env, corsHeaders);
             }
 
             // ============================================================
@@ -170,6 +183,75 @@ async function handleGetDonors(url, env, corsHeaders) {
             'Cache-Control': 'public, max-age=120'
         }
     });
+}
+
+// ============================================================
+// HWID Check — Kiểm tra HWID đã donate chưa
+// ============================================================
+async function handleHwidCheck(url, env, corsHeaders) {
+    const hwid = (url.searchParams.get('id') || '').trim();
+    if (!hwid) {
+        return respond({ error: 'Missing HWID' }, 400, corsHeaders);
+    }
+
+    if (!env.DONATE_HWIDS) {
+        // KV chưa bind → mặc định chưa donate
+        return respond({ donated: false }, 200, corsHeaders);
+    }
+
+    try {
+        const record = await env.DONATE_HWIDS.get(hwid);
+        return new Response(JSON.stringify({
+            donated: !!record,
+            ...(record ? { registered_at: JSON.parse(record).registered_at } : {})
+        }), {
+            headers: {
+                ...corsHeaders,
+                'Content-Type': 'application/json',
+                'Cache-Control': 'no-cache'
+            }
+        });
+    } catch (err) {
+        return respond({ donated: false, error: 'KV error' }, 200, corsHeaders);
+    }
+}
+
+// ============================================================
+// HWID Register — Đăng ký HWID sau khi donate thành công
+// ============================================================
+async function handleHwidRegister(request, env, corsHeaders) {
+    try {
+        const body = await request.json();
+        const hwid = (body.hwid || '').trim();
+
+        if (!hwid) {
+            return respond({ error: 'Missing HWID' }, 400, corsHeaders);
+        }
+
+        if (!env.DONATE_HWIDS) {
+            return respond({ error: 'KV not configured' }, 500, corsHeaders);
+        }
+
+        const record = {
+            registered_at: new Date().toISOString(),
+            amount: body.amount || 0,
+            code: body.code || '',
+            ip: request.headers.get('CF-Connecting-IP') || 'unknown'
+        };
+
+        // Lưu vào KV — không hết hạn (vĩnh viễn)
+        await env.DONATE_HWIDS.put(hwid, JSON.stringify(record));
+
+        return new Response(JSON.stringify({ success: true }), {
+            headers: {
+                ...corsHeaders,
+                'Content-Type': 'application/json',
+                'Cache-Control': 'no-cache'
+            }
+        });
+    } catch (err) {
+        return respond({ error: 'Failed to register HWID' }, 500, corsHeaders);
+    }
 }
 
 // ============================================================

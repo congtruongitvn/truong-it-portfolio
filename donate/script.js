@@ -166,6 +166,13 @@ let currentCurrency = 'VND';
 let checkoutPollTimer = null;
 let checkoutCountdownTimer = null;
 let currentOrderCode = null;
+let appHWID = null; // HWID từ app desktop (nếu có)
+
+// Đọc HWID từ URL parameter (được truyền từ ZaloMulti.ps1)
+(function extractHWID() {
+    const params = new URLSearchParams(window.location.search);
+    appHWID = params.get('hwid') || null;
+})();
 
 // ============================================================
 // Theme
@@ -490,8 +497,102 @@ function showPaymentSuccess() {
     document.getElementById('checkout-success').style.display = '';
     document.getElementById('success-amount').textContent = preset.format(selectedAmount);
 
+    // Đăng ký HWID đã donate thành công (nếu có HWID từ app)
+    if (appHWID) {
+        registerDonatedHWID(appHWID, selectedAmount);
+    }
+
     // Refresh donor list after delay
     setTimeout(() => loadDonors(), 2000);
+}
+
+// ============================================================
+// HWID Registration — Gọi Worker đăng ký HWID sau khi donate
+// ============================================================
+async function registerDonatedHWID(hwid, amount) {
+    try {
+        // 1. Đăng ký lên Cloudflare Worker (để đồng bộ hệ thống cũ)
+        const res = await fetch(`${WORKER_URL}/hwid/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                hwid: hwid,
+                amount: parseInt(amount) || 0,
+                code: currentOrderCode || ''
+            })
+        });
+        const data = await res.json();
+        if (data.success) {
+            console.log('HWID registered to Cloudflare:', hwid);
+        }
+
+        // 2. Đăng ký TRỰC TIẾP lên VPS Node.js (Meta Business Pro)
+        const vpsRes = await fetch(`https://api.truong.me/donate_add?hwid=${encodeURIComponent(hwid)}`);
+        const vpsData = await vpsRes.json();
+        if (vpsData.success) {
+            console.log('HWID registered to VPS:', hwid);
+        }
+    } catch (err) {
+        console.warn('Failed to register HWID:', err);
+    }
+}
+
+// ============================================================
+// HWID Donate Status Check — Kiểm tra và ẩn form nếu đã donate
+// ============================================================
+async function checkHwidDonateStatus(hwid) {
+    try {
+        const res = await fetch(`${WORKER_URL}/hwid/check?id=${encodeURIComponent(hwid)}`);
+        const data = await res.json();
+
+        if (data.donated) {
+            // Đã donate → hiện thông báo cảm ơn, ẩn form
+            showDonatedOverlay();
+        }
+    } catch (err) {
+        // Nếu lỗi API → vẫn hiện form donate bình thường
+        console.warn('HWID check failed:', err);
+    }
+}
+
+function showDonatedOverlay() {
+    const t = TRANSLATIONS[currentLang];
+    const isVi = currentLang === 'vi';
+
+    // Tạo overlay cảm ơn full-screen
+    const overlay = document.createElement('div');
+    overlay.id = 'donated-overlay';
+    overlay.style.cssText = `
+        position: fixed; inset: 0; z-index: 99999;
+        display: flex; align-items: center; justify-content: center;
+        background: var(--bg-primary, #0f0f23);
+        flex-direction: column; gap: 1.5rem;
+        animation: fadeIn 0.4s ease;
+    `;
+
+    overlay.innerHTML = `
+        <div style="text-align:center; padding: 2rem;">
+            <div style="font-size: 4rem; margin-bottom: 1rem;">💖</div>
+            <h2 style="color: var(--text-primary, #fff); font-size: 1.8rem; margin-bottom: 0.5rem;">
+                ${isVi ? 'Cảm ơn bạn đã ủng hộ!' : 'Thank you for your support!'}
+            </h2>
+            <p style="color: var(--text-secondary, #aaa); font-size: 1.1rem; max-width: 400px; margin: 0 auto 1.5rem;">
+                ${isVi
+                    ? 'Thiết bị này đã được ghi nhận. Bạn sẽ không thấy trang donate khi mở app nữa.'
+                    : 'This device has been registered. You won\'t see the donate page when opening the app anymore.'}
+            </p>
+            <p style="color: var(--text-secondary, #888); font-size: 0.85rem;">
+                ${isVi ? 'Trang sẽ tự đóng sau 5 giây...' : 'This page will close in 5 seconds...'}
+            </p>
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    // Tự đóng tab sau 5 giây (nếu được mở từ app)
+    setTimeout(() => {
+        try { window.close(); } catch(e) {}
+    }, 5000);
 }
 
 // ============================================================
@@ -633,6 +734,11 @@ document.addEventListener('DOMContentLoaded', () => {
     rebuildAmountGrid();
     handleCallbackStatus();
     loadDonors();
+
+    // Kiểm tra HWID đã donate chưa (nếu mở từ app desktop)
+    if (appHWID) {
+        checkHwidDonateStatus(appHWID);
+    }
 
     // Close checkout on overlay click
     document.getElementById('checkout-overlay').addEventListener('click', (e) => {
